@@ -1,0 +1,45 @@
+services:
+  s3:
+    image: ${S3_IMAGE:-rustfs/rustfs:latest}
+    container_name: doc-pipeline-s3
+    restart: unless-stopped
+    ports:
+      - "${S3_API_PORT:-9000}:9000"
+      - "${S3_CONSOLE_PORT:-9001}:9001"
+    environment:
+      RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY:?defina S3_ACCESS_KEY no .env}
+      RUSTFS_SECRET_KEY: ${S3_SECRET_KEY:?defina S3_SECRET_KEY no .env}
+      RUSTFS_VOLUMES: /data
+      RUSTFS_ADDRESS: 0.0.0.0:9000
+      RUSTFS_CONSOLE_ADDRESS: 0.0.0.0:9001
+      RUSTFS_CONSOLE_ENABLE: "true"
+    volumes:
+      - s3-data:/data
+
+  s3-init:
+    image: amazon/aws-cli:latest
+    container_name: doc-pipeline-s3-init
+    depends_on:
+      - s3
+    restart: "no"
+    environment:
+      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY}
+      AWS_DEFAULT_REGION: ${S3_REGION:-us-east-1}
+      AWS_ENDPOINT_URL: http://s3:9000
+      S3_BUCKETS: ${S3_BUCKETS:-raw-documents extracted-documents knowledge-base}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "aguardando o S3 ficar disponivel..."
+        until aws s3api list-buckets >/dev/null 2>&1; do sleep 2; done
+        for b in $$S3_BUCKETS; do
+          if aws s3api head-bucket --bucket "$$b" >/dev/null 2>&1; then
+            echo "bucket $$b ja existe"
+          else
+            aws s3api create-bucket --bucket "$$b" && echo "bucket $$b criado"
+          fi
+        done
+
+volumes:
+  s3-data:

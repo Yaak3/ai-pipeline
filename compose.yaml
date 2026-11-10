@@ -1,0 +1,4 @@
+name: doc-pipeline
+
+include:
+  - infrastructure/s3/compose.yaml
