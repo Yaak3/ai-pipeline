@@ -1,0 +1,27 @@
+[project]
+name = "pdf-processor"
+version = "0.1.0"
+description = "Microserviço de processamento e limpeza de PDFs (arquitetura hexagonal)"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "boto3>=1.44.0",
+    "pymupdf>=2.1",
+    "pytesseract>=0.3.13",
+    "python-dotenv>=1.2.4",
+]
+
+[project.scripts]
+pdf-processor = "pdf_processor.adapters.inbound.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.12.13,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
